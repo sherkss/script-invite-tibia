@@ -1,0 +1,4 @@
+# Um personagem por linha.
+# Linhas vazias e linhas iniciadas com # sao ignoradas.
+Jadebra metabatida
+Outro Boneco
