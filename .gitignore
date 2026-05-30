@@ -1,5 +1,8 @@
 __pycache__/
 *.pyc
 cookie.txt
+old_cookie.txt
+new_cookie.txt
+*_cookie.txt
 characters.txt
 .env

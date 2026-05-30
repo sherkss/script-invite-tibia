@@ -23,14 +23,16 @@ def move_characters(
     characters: list[str],
     old_guild: str,
     new_guild: str,
-    cookie: str,
+    old_cookie: str,
+    new_cookie: str,
     rank: str,
     delay: float,
     timeout: int,
     dry_run: bool,
     invite_when_not_in_old: bool,
 ) -> int:
-    session = build_session(cookie)
+    old_session = build_session(old_cookie)
+    new_session = build_session(new_cookie)
     failures = 0
 
     for index, character in enumerate(characters, start=1):
@@ -38,7 +40,7 @@ def move_characters(
 
         try:
             found, check_status = character_is_in_guild(
-                session=session,
+                session=old_session,
                 guild_name=old_guild,
                 character=character,
                 timeout=timeout,
@@ -58,7 +60,7 @@ def move_characters(
                     continue
 
                 exclude_response = exclude_character(
-                    session=session,
+                    session=old_session,
                     guild_name=old_guild,
                     character=character,
                     rank=rank,
@@ -87,7 +89,7 @@ def move_characters(
                 continue
 
             invite_response = invite_character(
-                session=session,
+                session=new_session,
                 guild_name=new_guild,
                 character=character,
                 timeout=timeout,
@@ -125,7 +127,21 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--cookie-file",
         type=Path,
-        help="Arquivo contendo o valor completo do header Cookie.",
+        help=(
+            "Arquivo contendo o valor completo do header Cookie. "
+            "Usado nos dois passos se --old-cookie-file/--new-cookie-file "
+            "nao forem informados."
+        ),
+    )
+    parser.add_argument(
+        "--old-cookie-file",
+        type=Path,
+        help="Cookie da conta/sessao que remove da guild antiga.",
+    )
+    parser.add_argument(
+        "--new-cookie-file",
+        type=Path,
+        help="Cookie da conta/sessao que invita na guild nova.",
     )
     parser.add_argument(
         "--rank",
@@ -162,7 +178,17 @@ def main() -> int:
 
     try:
         characters = read_characters(args.characters)
-        cookie = read_cookie(args.cookie_file)
+        old_cookie_file = args.old_cookie_file or args.cookie_file
+        new_cookie_file = args.new_cookie_file or args.cookie_file
+
+        if not old_cookie_file or not new_cookie_file:
+            raise ValueError(
+                "Informe --old-cookie-file e --new-cookie-file, "
+                "ou use --cookie-file para os dois passos."
+            )
+
+        old_cookie = read_cookie(old_cookie_file)
+        new_cookie = read_cookie(new_cookie_file)
     except (OSError, ValueError) as exc:
         print(f"Erro: {exc}", file=sys.stderr)
         return 1
@@ -171,7 +197,8 @@ def main() -> int:
         characters=characters,
         old_guild=args.old_guild,
         new_guild=args.new_guild,
-        cookie=cookie,
+        old_cookie=old_cookie,
+        new_cookie=new_cookie,
         rank=args.rank,
         delay=args.delay,
         timeout=args.timeout,
